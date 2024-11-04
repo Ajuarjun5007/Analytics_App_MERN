@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-
 const PadelDataSchema = new Schema({
+  camera_id: { type: String, required: true },
+  booking_id: { type: String, required: true, unique: true },
   deadzone: {
     type: Map,
     of: String,
@@ -12,6 +13,10 @@ const PadelDataSchema = new Schema({
     of: String,
   },
   heatmap: {
+    type: Map,
+    of: String,
+  },
+  heatmap2: {
     type: Map,
     of: String,
   },
@@ -32,3 +37,5 @@ const PadelDataSchema = new Schema({
 });
 
 module.exports = mongoose.model('PadelData', PadelDataSchema);
+
+

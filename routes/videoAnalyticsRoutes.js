@@ -2,16 +2,14 @@ const express = require('express');
 const router = express.Router();
 const videoAnalyticsController = require('../controllers/videoAnalyticsController');
 
-// Get all video analytics
-router.get('/', videoAnalyticsController.getAllAnalytics);
+// Define routes
+router.get('/', videoAnalyticsController.getAllAnalytics);        
+router.post('/', videoAnalyticsController.addAnalytics);         
+router.get('/:booking_id', videoAnalyticsController.getAnalyticsByBookingId); 
 
-// Add new video analytics
-router.post('/', videoAnalyticsController.addAnalytics);
+// Additional routes (uncomment if needed)
+// router.delete('/:id', videoAnalyticsController.deleteAnalyticsById);
+router.post('/upsert', videoAnalyticsController.upsertAnalyticsByIdentifiers);
 
-// Get video analytics by ID
-router.get('/:id', videoAnalyticsController.getAnalyticsById);
-
-// Delete video analytics by ID
-router.delete('/:id', videoAnalyticsController.deleteAnalyticsById);
 
 module.exports = router;

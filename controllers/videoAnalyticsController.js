@@ -7,13 +7,13 @@ exports.getAllAnalytics = async (req, res) => {
         res.status(200).json({
             status: 'success',
             message: 'Fetched all video analytics successfully',
-            data: analytics
+            data: analytics,
         });
     } catch (error) {
         res.status(500).json({
             status: 'error',
             message: 'Failed to fetch video analytics',
-            error: error.message
+            error: error.message,
         });
     }
 };
@@ -26,61 +26,96 @@ exports.addAnalytics = async (req, res) => {
         res.status(201).json({
             status: 'success',
             message: 'Video analytics added successfully',
-            data: newAnalytics
+            data: newAnalytics,
         });
     } catch (error) {
         res.status(400).json({
             status: 'error',
             message: 'Failed to add video analytics',
-            error: error.message
+            error: error.message,
         });
     }
 };
 
-// Get analytics by ID
-exports.getAnalyticsById = async (req, res) => {
+// Get analytics by booking_id
+exports.getAnalyticsByBookingId = async (req, res) => {
+    const { booking_id } = req.params;
+
     try {
-        const analytics = await PadelData.findById(req.params.id);
+        const analytics = await PadelData.findOne({ booking_id });
+        
         if (!analytics) {
             return res.status(404).json({
                 status: 'error',
-                message: 'Video analytics not found',
+                message: 'No analytics found for the specified booking_id',
             });
         }
+
         res.status(200).json({
             status: 'success',
-            message: 'Fetched video analytics successfully',
-            data: analytics
+            message: 'Fetched analytics data successfully',
+            data: analytics,
         });
     } catch (error) {
-        res.status(400).json({
+        res.status(500).json({
             status: 'error',
-            message: 'Failed to fetch video analytics',
-            error: error.message
+            message: 'Failed to fetch analytics data by booking_id',
+            error: error.message,
         });
     }
 };
 
-// Delete analytics by ID
-exports.deleteAnalyticsById = async (req, res) => {
+
+// Upsert analytics by `booking_id` and `camera_id`
+
+
+exports.upsertAnalyticsByIdentifiers = async (req, res) => {
+    const { booking_id, camera_id } = req.query;
+    const data = req.body;
+
     try {
-        const analytics = await PadelData.findByIdAndDelete(req.params.id);
-        if (!analytics) {
-            return res.status(404).json({
+        // Validate that booking_id and camera_id in query match those in body
+        if (data.booking_id !== booking_id || data.camera_id !== camera_id) {
+            return res.status(400).json({
                 status: 'error',
-                message: 'Video analytics not found',
+                message: 'Mismatch between booking_id and camera_id in query and body'
             });
         }
-        res.status(200).json({
-            status: 'success',
-            message: 'Video analytics deleted successfully',
-            data: analytics
-        });
+
+        // Check if the document exists by booking_id and camera_id
+        const existingAnalytics = await PadelData.findOne({ booking_id, camera_id });
+
+        if (existingAnalytics) {
+            // Update if the document exists
+            const updatedAnalytics = await PadelData.findOneAndUpdate(
+                { booking_id, camera_id },
+                { $set: data },
+                { new: true }
+            );
+
+            return res.status(200).json({
+                status: 'success',
+                message: 'Updated existing analytics data',
+                data: updatedAnalytics,
+            });
+        } else {
+            // If no document exists, create a new one
+            const newAnalytics = new PadelData({ booking_id, camera_id, ...data });
+            await newAnalytics.save();
+
+            return res.status(201).json({
+                status: 'success',
+                message: 'Created new analytics data',
+                data: newAnalytics,
+            });
+        }
     } catch (error) {
         res.status(400).json({
             status: 'error',
-            message: 'Failed to delete video analytics',
-            error: error.message
+            message: 'Failed to upsert video analytics data',
+            error: error.message,
         });
     }
 };
+
+
