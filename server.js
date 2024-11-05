@@ -1,5 +1,5 @@
 const express = require('express');
-const mongoose = require('mongoose'); // Import mongoose directly
+const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
 
@@ -9,7 +9,7 @@ require('./db'); // Ensure that './db' establishes the connection to MongoDB
 const videoAnalyticsRoutes = require('./routes/videoAnalyticsRoutes');
 
 // Middleware
-app.use(express.json()); // Parse JSON bodies
+app.use(express.json({ limit: '1mb' })); // Set JSON payload size limit to 1MB
 app.use(cors()); // Enable CORS
 
 // Use routes

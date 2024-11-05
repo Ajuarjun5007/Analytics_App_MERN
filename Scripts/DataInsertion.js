@@ -9,11 +9,10 @@ async function insertData() {
         console.log("MongoDB connected successfully!");
 
         const jsonData = require('../analyitcsData.json');
-
-        // Create an array of data to insert
+        
         const dataArray = Array.from({ length: 10 }, (_, index) => ({
-            booking_id: `booking_${index + 1}`,  // Unique for each entry
-            camera_id: `camera_${index + 1}`,    // Unique for each entry
+            booking_id: `booking_${index + 1}`,  
+            camera_id: `camera_${index + 1}`,   
             deadzone: jsonData.deadzone,
             distance: jsonData.distance,
             heatmap: jsonData.heatmap,

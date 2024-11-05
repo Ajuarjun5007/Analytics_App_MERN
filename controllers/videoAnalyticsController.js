@@ -1,5 +1,5 @@
 const PadelData = require('../models/Video_Analytics');
-
+const zlib = require('zlib');
 // Get all video analytics
 exports.getAllAnalytics = async (req, res) => {
     try {
@@ -71,10 +71,27 @@ exports.getAnalyticsByBookingId = async (req, res) => {
 
 exports.upsertAnalyticsByIdentifiers = async (req, res) => {
     const { booking_id, camera_id } = req.query;
-    const data = req.body;
 
     try {
-        // Validate that booking_id and camera_id in query match those in body
+        let data;
+
+        // Check if the request body is compressed
+        if (req.headers['content-encoding'] === 'gzip') {
+            // Decompress the gzipped request body
+            data = await new Promise((resolve, reject) => {
+                zlib.gunzip(req.body, (err, decompressedBuffer) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve(JSON.parse(decompressedBuffer.toString('utf-8')));
+                });
+            });
+        } else {
+            // Parse uncompressed JSON data directly
+            data = req.body;
+        }
+
+        // Validate identifiers in the request
         if (data.booking_id !== booking_id || data.camera_id !== camera_id) {
             return res.status(400).json({
                 status: 'error',
@@ -82,33 +99,20 @@ exports.upsertAnalyticsByIdentifiers = async (req, res) => {
             });
         }
 
-        // Check if the document exists by booking_id and camera_id
-        const existingAnalytics = await PadelData.findOne({ booking_id, camera_id });
+        const updatedAnalytics = await PadelData.findOneAndUpdate(
+            { booking_id, camera_id },
+            { $set: data },
+            { new: true, upsert: true, runValidators: true }
+        );
+        const isNew = updatedAnalytics.isNew;  
+        const status = isNew ? 201 : 200;
+        const message = isNew ? 'Created new analytics data' : 'Updated existing analytics data';
 
-        if (existingAnalytics) {
-            // Update if the document exists
-            const updatedAnalytics = await PadelData.findOneAndUpdate(
-                { booking_id, camera_id },
-                { $set: data },
-                { new: true }
-            );
-
-            return res.status(200).json({
-                status: 'success',
-                message: 'Updated existing analytics data',
-                data: updatedAnalytics,
-            });
-        } else {
-            // If no document exists, create a new one
-            const newAnalytics = new PadelData({ booking_id, camera_id, ...data });
-            await newAnalytics.save();
-
-            return res.status(201).json({
-                status: 'success',
-                message: 'Created new analytics data',
-                data: newAnalytics,
-            });
-        }
+        res.status(status).json({
+            status: 'success',
+            message,
+            data: updatedAnalytics,
+        });
     } catch (error) {
         res.status(400).json({
             status: 'error',
